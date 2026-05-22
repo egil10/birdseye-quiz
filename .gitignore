@@ -1,0 +1,9 @@
+node_modules
+.DS_Store
+.vercel
+.idea
+.vscode
+*.log
+scripts/.build.log
+.cache
+.tmp

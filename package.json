@@ -1,0 +1,14 @@
+{
+  "name": "birdseye-quiz",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Endless birds-eye-view city quiz. Static frontend, images sourced from Wikimedia Commons.",
+  "scripts": {
+    "build:cities": "node scripts/build-cities.mjs",
+    "dev": "npx --yes http-server -p 5173 -c-1 ."
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

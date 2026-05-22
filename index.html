@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>birdseye · guess the city from above</title>
+  <meta name="description" content="Endless birds-eye-view city quiz. Spot the skyline." />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#06070a" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23111'/><circle cx='32' cy='32' r='10' fill='%23fff'/></svg>" />
+  <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin />
+  <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+    <div class="grain"></div>
+  </div>
+  <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+  <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+
+  <main class="stage" id="stage">
+    <header class="top-row">
+      <div class="pill pill-mode" id="modePill" role="tablist" aria-label="category">
+        <button class="mode-btn is-active" data-cat="all">all</button>
+        <button class="mode-btn" data-cat="famous">famous</button>
+        <button class="mode-btn" data-cat="Europe">EU</button>
+        <button class="mode-btn" data-cat="Asia">AS</button>
+        <button class="mode-btn" data-cat="Americas">AM</button>
+        <button class="mode-btn" data-cat="Africa">AF</button>
+        <button class="mode-btn" data-cat="Oceania">OC</button>
+      </div>
+
+      <div class="pill pill-stats" id="stats" aria-live="polite">
+        <span class="stat"><span class="stat-num" id="streak">0</span><span class="stat-label">streak</span></span>
+        <span class="stat-sep"></span>
+        <span class="stat"><span class="stat-num" id="accuracy">—</span><span class="stat-label">acc</span></span>
+        <span class="stat-sep"></span>
+        <span class="stat"><span class="stat-num" id="elo">1000</span><span class="stat-label">elo</span></span>
+        <span class="stat-sep"></span>
+        <span class="stat"><span class="stat-num" id="best">0</span><span class="stat-label">best</span></span>
+        <span class="stat-sep"></span>
+        <span class="stat"><span class="stat-num" id="total">0</span><span class="stat-label">played</span></span>
+      </div>
+
+      <button class="pill pill-reset" id="reset" title="reset stats" aria-label="reset stats">↺</button>
+    </header>
+
+    <figure class="frame" id="frame">
+      <div class="frame-glow" id="frameGlow"></div>
+      <img class="hero" id="hero" alt="" decoding="async" />
+      <div class="frame-loader" id="loader"></div>
+      <div class="reveal" id="reveal" hidden>
+        <span class="reveal-name" id="revealName"></span>
+        <span class="reveal-country" id="revealCountry"></span>
+      </div>
+    </figure>
+
+    <div class="options" id="options" role="group" aria-label="choices">
+      <button class="pill pill-opt" data-idx="0"><span class="opt-key">1</span><span class="opt-label"></span></button>
+      <button class="pill pill-opt" data-idx="1"><span class="opt-key">2</span><span class="opt-label"></span></button>
+      <button class="pill pill-opt" data-idx="2"><span class="opt-key">3</span><span class="opt-label"></span></button>
+      <button class="pill pill-opt" data-idx="3"><span class="opt-key">4</span><span class="opt-label"></span></button>
+    </div>
+
+    <footer class="bottom-row">
+      <span class="hint" id="hint">1·2·3·4 to answer  ·  space for next</span>
+      <a class="pill pill-source" id="source" href="#" target="_blank" rel="noreferrer noopener" hidden>
+        <span class="src-tag" id="srcTag"></span>
+        <span class="src-link">view source ↗</span>
+      </a>
+    </footer>
+  </main>
+
+  <div class="splash" id="splash">
+    <div class="splash-inner">
+      <div class="splash-title">birdseye</div>
+      <div class="splash-sub">loading the world from above…</div>
+      <div class="splash-bar"><div class="splash-bar-fill" id="splashFill"></div></div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
