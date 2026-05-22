@@ -1,12 +1,10 @@
 // birdseye-quiz — explore page
 // Browse every city + image. Filter by continent/tier/source. Click a card
-// to see all 4 images with their source provenance.
+// to open a lightbox with one large image and a thumb strip for the rest.
 
 import { flagHtml } from "./country-flags.mjs";
 
 const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-
 const els = {
   grid: $("#grid"),
   meta: $("#exploreMeta"),
@@ -15,28 +13,37 @@ const els = {
   searchClear: $("#searchClear"),
   contPill: $("#contPill"),
   tierPill: $("#tierPill"),
-  sourcePill: $("#sourcePill"),
+  sourceSelect: $("#sourceSelect"),
   modal: $("#modal"),
   modalTitle: $("#modalTitle"),
   modalSub: $("#modalSub"),
-  modalGrid: $("#modalGrid"),
+  modalMain: $("#modalMain"),
+  modalInfo: $("#modalInfo"),
+  modalThumbs: $("#modalThumbs"),
   modalClose: $("#modalClose"),
-  dust: $("#dust"),
-  cursorGlow: $("#cursorGlow"),
-  cursorDot: $("#cursorDot"),
+  cursorHalo: $("#cursorHalo"),
 };
 
 const state = {
   manifest: null,
   filter: { search: "", continent: "all", tier: "all", source: "all" },
+  modalCity: null,
+  modalImgIdx: 0,
 };
 
 // ---------- helpers ----------
 function escapeAttr(s) { return String(s).replace(/"/g, "&quot;"); }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
 
+// Wikimedia rejects arbitrary thumbnail widths for direct CDN access — only
+// the sizes their API has pre-generated for a given file are valid. The
+// manifest already stores a 1280px-wide thumb, which is small enough for the
+// grid (the browser downscales it to ~200-300px on display) and large enough
+// to look sharp in the lightbox. So no client-side resizing for now.
+function gridThumb(img) { return img.thumb; }
+function bigThumb(img)  { return img.thumb; }
+
 function pickPrimaryImage(city) {
-  // Prefer images from category-aerial sources — they're the curated ones.
   const order = [
     "commons-category-aerial",
     "commons-category-aerial-alt",
@@ -46,11 +53,11 @@ function pickPrimaryImage(city) {
     "commons-category-city",
     "wikipedia-summary",
   ];
-  const byRank = i => {
+  const rank = i => {
     const r = order.indexOf(i.source);
     return r < 0 ? 99 : r;
   };
-  return city.images.slice().sort((a, b) => byRank(a) - byRank(b))[0];
+  return city.images.slice().sort((a, b) => rank(a) - rank(b))[0];
 }
 
 function uniqSources(cities) {
@@ -90,82 +97,92 @@ function render(cities) {
   for (const c of cities) {
     const card = document.createElement("article");
     card.className = "card";
-    card.dataset.id = c.id;
     const img = pickPrimaryImage(c);
     card.innerHTML = `
-      <img loading="lazy" decoding="async" alt="${escapeAttr(c.name + ', ' + c.country)}" />
-      <span class="card-badge">${escapeHtml(c.continent)} · t${c.tier}</span>
+      <img loading="lazy" decoding="async" alt="${escapeAttr(c.name + ', ' + c.country)}" src="${escapeAttr(gridThumb(img))}" />
       <span class="card-cap">
         <b>${escapeHtml(c.name)}</b>
         <span class="card-meta">${flagHtml(c.country)} ${escapeHtml(c.country)}</span>
       </span>
     `;
     const imgEl = card.querySelector("img");
-    imgEl.src = img.thumb;
-    imgEl.onload = () => imgEl.classList.add("is-loaded");
-    imgEl.onerror = () => { card.style.opacity = "0.5"; };
+    imgEl.addEventListener("load", () => imgEl.classList.add("is-loaded"), { once: true });
+    imgEl.addEventListener("error", () => { card.style.opacity = "0.4"; }, { once: true });
+    if (imgEl.complete && imgEl.naturalWidth) imgEl.classList.add("is-loaded");
     card.addEventListener("click", () => openModal(c));
     frag.appendChild(card);
   }
   els.grid.appendChild(frag);
 }
 
-// ---------- modal ----------
+// ---------- modal (lightbox) ----------
 function openModal(city) {
-  els.modalTitle.innerHTML = `${escapeHtml(city.name)} <span style="font-weight:500;color:var(--muted);font-size:18px">${flagHtml(city.country, { cls: "flag flag-lg" })}</span>`;
+  state.modalCity = city;
+  state.modalImgIdx = 0;
+  els.modalTitle.innerHTML = `${escapeHtml(city.name)} ${flagHtml(city.country, { cls: "flag flag-lg" })}`;
   els.modalSub.textContent = `${city.country} · ${city.continent} · tier ${city.tier} · ${city.images.length} images`;
-  els.modalGrid.innerHTML = "";
-  const frag = document.createDocumentFragment();
-  for (const img of city.images) {
-    const item = document.createElement("div");
-    item.className = "modal-item";
-    item.innerHTML = `
-      <img loading="lazy" decoding="async" alt="${escapeAttr(city.name)} aerial" src="${escapeAttr(img.thumb)}" />
-      <div class="modal-item-meta">
-        <div class="modal-item-row">
-          <span class="modal-source-tag">${escapeHtml(img.source)}</span>
-          <a class="modal-link" href="${escapeAttr(img.filePageUrl)}" target="_blank" rel="noreferrer noopener">commons ↗</a>
-        </div>
-        <div class="modal-item-row">
-          <span>${escapeHtml(img.width)} × ${escapeHtml(img.height)} · ${escapeHtml(img.license || "—")}</span>
-          ${img.author ? `<span>${escapeHtml(img.author)}</span>` : ""}
-        </div>
-        ${img.sourceQuery ? `<div class="modal-item-row"><span style="font-size:11px;color:var(--dim)">query: ${escapeHtml(img.sourceQuery)}</span></div>` : ""}
-      </div>
-    `;
-    frag.appendChild(item);
-  }
-  els.modalGrid.appendChild(frag);
+  renderModalThumbs();
+  swapModalImage(0);
   els.modal.classList.add("is-open");
   els.modal.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
 }
+
+function renderModalThumbs() {
+  els.modalThumbs.innerHTML = "";
+  const frag = document.createDocumentFragment();
+  state.modalCity.images.forEach((img, idx) => {
+    const b = document.createElement("button");
+    b.className = "modal-thumb";
+    b.type = "button";
+    b.innerHTML = `<img loading="lazy" decoding="async" src="${escapeAttr(img.thumb)}" alt="thumb ${idx + 1}" />`;
+    b.addEventListener("click", () => swapModalImage(idx));
+    frag.appendChild(b);
+  });
+  els.modalThumbs.appendChild(frag);
+}
+
+function swapModalImage(idx) {
+  state.modalImgIdx = idx;
+  const img = state.modalCity.images[idx];
+  els.modalMain.src = bigThumb(img);
+  els.modalMain.alt = `${state.modalCity.name} aerial`;
+  els.modalInfo.innerHTML = `
+    <span><span class="modal-source-tag">${escapeHtml(img.source)}</span> · <b>${img.width || "?"}×${img.height || "?"}</b> · ${escapeHtml(img.license || "—")}${img.author ? ` · ${escapeHtml(img.author)}` : ""}</span>
+    <a class="modal-link" href="${escapeAttr(img.filePageUrl)}" target="_blank" rel="noreferrer noopener">commons ↗</a>
+  `;
+  Array.from(els.modalThumbs.children).forEach((t, i) => t.classList.toggle("is-active", i === idx));
+}
+
 function closeModal() {
   els.modal.classList.remove("is-open");
   els.modal.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "";
+  state.modalCity = null;
 }
 
-// ---------- inputs ----------
-function initSourcePill() {
+// ---------- filter UI ----------
+function initSourceSelect() {
   const sources = uniqSources(state.manifest.cities);
-  const frag = document.createDocumentFragment();
   for (const s of sources) {
-    const b = document.createElement("button");
-    b.className = "mode-btn";
-    b.dataset.src = s;
-    // shorten the label
-    b.textContent = s.replace(/^commons-/, "").replace(/-/g, " ");
-    frag.appendChild(b);
+    const o = document.createElement("option");
+    o.value = s;
+    o.textContent = s.replace(/^commons-/, "").replace(/-/g, " ");
+    els.sourceSelect.appendChild(o);
   }
-  els.sourcePill.appendChild(frag);
+  els.sourceSelect.addEventListener("change", () => {
+    state.filter.source = els.sourceSelect.value;
+    applyFilter();
+  });
 }
 
 function initFilters() {
+  let searchTimer = 0;
   els.search.addEventListener("input", () => {
-    state.filter.search = els.search.value;
-    els.searchClear.style.opacity = els.search.value ? "1" : "0";
-    applyFilter();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      state.filter.search = els.search.value;
+      els.searchClear.style.opacity = els.search.value ? "1" : "0";
+      applyFilter();
+    }, 80);
   });
   els.searchClear.addEventListener("click", () => {
     els.search.value = "";
@@ -190,70 +207,56 @@ function initFilters() {
     state.filter.tier = b.dataset.tier;
     applyFilter();
   });
-  els.sourcePill.addEventListener("click", e => {
-    const b = e.target.closest("[data-src]");
-    if (!b) return;
-    els.sourcePill.querySelectorAll(".mode-btn").forEach(x => x.classList.toggle("is-active", x === b));
-    state.filter.source = b.dataset.src;
-    applyFilter();
-  });
 
   els.modal.addEventListener("click", e => { if (e.target === els.modal) closeModal(); });
   els.modalClose.addEventListener("click", closeModal);
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+  document.addEventListener("keydown", e => {
+    if (!state.modalCity) return;
+    if (e.key === "Escape") closeModal();
+    else if (e.key === "ArrowRight") swapModalImage((state.modalImgIdx + 1) % state.modalCity.images.length);
+    else if (e.key === "ArrowLeft") swapModalImage((state.modalImgIdx - 1 + state.modalCity.images.length) % state.modalCity.images.length);
+  });
 }
 
-// ---------- cursor + dust (shared with quiz) ----------
-function initDust(count = 14) {
-  if (!els.dust) return;
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < count; i++) {
-    const s = document.createElement("span");
-    const x = Math.random() * 100;
-    const dur = 18 + Math.random() * 22;
-    const delay = -Math.random() * dur;
-    const size = 2 + Math.random() * 4;
-    const drift = (Math.random() * 80 - 40) + "px";
-    s.style.cssText = `left:${x}vw;width:${size}px;height:${size}px;` +
-      `animation-duration:${dur}s;animation-delay:${delay}s;--drift:${drift};`;
-    frag.appendChild(s);
-  }
-  els.dust.appendChild(frag);
-}
-
+// ---------- cursor halo (no visible dot) ----------
 function initCursor() {
+  if (!els.cursorHalo) return;
   let tx = innerWidth / 2, ty = innerHeight / 2;
   let cx = tx, cy = ty;
   let active = false;
+  let raf = 0;
 
-  addEventListener("pointermove", e => {
+  const onMove = e => {
     if (e.pointerType === "touch") return;
     tx = e.clientX; ty = e.clientY;
-    els.cursorDot.style.transform = `translate3d(${tx}px, ${ty}px, 0) translate(-50%, -50%)`;
     if (!active) { active = true; document.body.classList.add("has-cursor"); }
-  });
-  addEventListener("pointerleave", () => { document.body.classList.remove("has-cursor"); active = false; });
-  addEventListener("blur", () => { document.body.classList.remove("has-cursor"); active = false; });
+    if (!raf) raf = requestAnimationFrame(tick);
+  };
+  const onLeave = () => { document.body.classList.remove("has-cursor"); active = false; };
+  addEventListener("pointermove", onMove, { passive: true });
+  addEventListener("pointerleave", onLeave);
+  addEventListener("blur", onLeave);
 
-  function loop() {
-    cx += (tx - cx) * 0.12;
-    cy += (ty - cy) * 0.12;
-    els.cursorGlow.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
-    requestAnimationFrame(loop);
+  function tick() {
+    raf = 0;
+    cx += (tx - cx) * 0.22;
+    cy += (ty - cy) * 0.22;
+    els.cursorHalo.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+    if (Math.abs(tx - cx) > 0.5 || Math.abs(ty - cy) > 0.5) {
+      raf = requestAnimationFrame(tick);
+    }
   }
-  loop();
 }
 
 // ---------- boot ----------
 async function boot() {
   initCursor();
-  initDust();
   try {
     const res = await fetch("./data/cities.json", { cache: "force-cache" });
     if (!res.ok) throw new Error("manifest fetch failed: " + res.status);
     const manifest = await res.json();
     state.manifest = manifest;
-    initSourcePill();
+    initSourceSelect();
     initFilters();
     applyFilter();
   } catch (err) {

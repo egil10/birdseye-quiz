@@ -5,9 +5,9 @@ import { flagHtml } from "./country-flags.mjs";
 
 // ---------- constants ----------
 const STORAGE_KEY = "birdseye:v1";
-const RING_SIZE = 30;             // anti-repeat ring buffer
-const REVEAL_MS = 1300;           // auto-advance delay after answer
-const K = 24;                     // ELO K-factor
+const RING_SIZE = 30;
+const REVEAL_MS = 1300;
+const K = 24;
 const CITY_RATING_BY_TIER = { 1: 880, 2: 1080, 3: 1380, 4: 1680 };
 
 // ---------- DOM ----------
@@ -27,15 +27,12 @@ const els = {
   total: $("#total"),
   pool: $("#pool"),
   reset: $("#reset"),
-  dust: $("#dust"),
   source: $("#source"),
   srcTag: $("#srcTag"),
-  hint: $("#hint"),
   modeBtns: Array.from(document.querySelectorAll(".mode-btn")),
   splash: $("#splash"),
   splashFill: $("#splashFill"),
-  cursorGlow: $("#cursorGlow"),
-  cursorDot: $("#cursorDot"),
+  cursorHalo: $("#cursorHalo"),
 };
 
 // ---------- state ----------
@@ -106,30 +103,23 @@ function rebuildPool() {
   if (state.category === "all") state.pool = all;
   else if (state.category === "famous") state.pool = all.filter(c => c.tier <= 2);
   else state.pool = all.filter(c => c.continent === state.category);
-  // ensure pool has enough variety
   if (state.pool.length < 4) state.pool = all;
   if (els.pool) els.pool.textContent = String(state.pool.length);
 }
 
 // ---------- question generation ----------
 function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
 function pickCity() {
   const candidates = state.pool.filter(c => !state.recent.includes(c.id));
   const src = candidates.length >= 4 ? candidates : state.pool;
   return pickRandom(src);
 }
-
 function pickOptions(correct) {
-  // distractors come from the active pool when it has enough cities,
-  // so e.g. "Europe" mode stays all-European.
   const pool = state.pool.length >= 6 ? state.pool : state.manifest.cities;
-  const sameContinent = pool
-    .filter(c => c.continent === correct.continent && c.id !== correct.id);
+  const sameContinent = pool.filter(c => c.continent === correct.continent && c.id !== correct.id);
   const others = pool.filter(c => c.id !== correct.id);
 
   const distractors = [];
-  // up to 2 distractors from the same continent
   const continentPool = sameContinent.slice();
   while (distractors.length < 2 && continentPool.length) {
     const i = Math.floor(Math.random() * continentPool.length);
@@ -140,12 +130,9 @@ function pickOptions(correct) {
     const i = Math.floor(Math.random() * remainingPool.length);
     distractors.push(remainingPool.splice(i, 1)[0]);
   }
-
   const options = shuffle([correct, ...distractors]);
-  const correctIdx = options.indexOf(correct);
-  return { options, correctIdx };
+  return { options, correctIdx: options.indexOf(correct) };
 }
-
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -209,7 +196,7 @@ async function showNext() {
       q = await buildAndPreloadQuestion();
     }
   } catch (err) {
-    console.warn("question build failed, retrying soon:", err);
+    console.warn("question build failed, retrying:", err);
     state.busy = false;
     setTimeout(showNext, 1500);
     return;
@@ -220,14 +207,11 @@ async function showNext() {
   state.options = q.options;
   state.correctIdx = q.correctIdx;
 
-  // bump anti-repeat ring
   state.recent.push(q.city.id);
   if (state.recent.length > RING_SIZE) state.recent.shift();
 
-  // paint
   els.hero.src = q.image.thumb;
-  els.hero.alt = `aerial view`; // we don't spoil the answer in alt
-  // wait for image to be visible
+  els.hero.alt = "aerial view";
   await new Promise(r => {
     if (els.hero.complete && els.hero.naturalWidth) return r();
     els.hero.onload = () => r();
@@ -242,8 +226,6 @@ async function showNext() {
   });
 
   state.busy = false;
-
-  // start preloading the *next* question in the background
   buildAndPreloadQuestion().then(n => { state.next = n; }).catch(() => {});
 }
 
@@ -267,17 +249,16 @@ function answer(idx) {
   els.revealCountry.innerHTML = flagHtml(state.current.country) + `<span>${state.current.country}</span>`;
   els.reveal.hidden = false;
 
-  // source attribution
   els.source.href = state.currentImage.filePageUrl || state.currentImage.full;
   els.srcTag.textContent = (state.currentImage.source || "wikimedia").replace(/^commons-/, "");
   els.source.hidden = false;
 
   applyResult(state.current, correct);
-
   setTimeout(() => { if (state.answered) showNext(); }, REVEAL_MS);
 }
 
-// ---------- category ----------
+function haptic(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
+
 function setCategory(cat) {
   if (state.category === cat) return;
   state.category = cat;
@@ -287,62 +268,43 @@ function setCategory(cat) {
   showNext();
 }
 
-// ---------- reset ----------
 function resetStats() {
   state.stats = { elo: 1000, correct: 0, total: 0, streak: 0, best: 0 };
   saveStats();
   renderStats();
 }
 
-// ---------- ambient dust ----------
-function initDust(count = 14) {
-  if (!els.dust) return;
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < count; i++) {
-    const s = document.createElement("span");
-    const x = Math.random() * 100;
-    const dur = 18 + Math.random() * 22;       // 18s..40s
-    const delay = -Math.random() * dur;         // start mid-cycle
-    const size = 2 + Math.random() * 4;
-    const drift = (Math.random() * 80 - 40) + "px";
-    s.style.cssText = `left:${x}vw;width:${size}px;height:${size}px;` +
-      `animation-duration:${dur}s;animation-delay:${delay}s;--drift:${drift};`;
-    frag.appendChild(s);
-  }
-  els.dust.appendChild(frag);
-}
-
-// ---------- cursor glow ----------
+// ---------- cursor halo (lightweight, no visible dot) ----------
 function initCursor() {
+  if (!els.cursorHalo) return;
   let tx = innerWidth / 2, ty = innerHeight / 2;
   let cx = tx, cy = ty;
   let active = false;
+  let raf = 0;
 
-  function setRaw(x, y) {
-    document.documentElement.style.setProperty("--cur-x-raw", x + "px");
-    document.documentElement.style.setProperty("--cur-y-raw", y + "px");
-    els.cursorDot.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
-  }
-
-  addEventListener("pointermove", e => {
+  const onMove = e => {
     if (e.pointerType === "touch") return;
     tx = e.clientX; ty = e.clientY;
-    setRaw(tx, ty);
     if (!active) { active = true; document.body.classList.add("has-cursor"); }
-  });
-  addEventListener("pointerleave", () => { document.body.classList.remove("has-cursor"); active = false; });
-  addEventListener("blur", () => { document.body.classList.remove("has-cursor"); active = false; });
+    if (!raf) raf = requestAnimationFrame(tick);
+  };
+  const onLeave = () => { document.body.classList.remove("has-cursor"); active = false; };
 
-  function loop() {
-    cx += (tx - cx) * 0.12;
-    cy += (ty - cy) * 0.12;
-    els.cursorGlow.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
-    requestAnimationFrame(loop);
+  addEventListener("pointermove", onMove, { passive: true });
+  addEventListener("pointerleave", onLeave);
+  addEventListener("blur", onLeave);
+
+  function tick() {
+    raf = 0;
+    cx += (tx - cx) * 0.22;
+    cy += (ty - cy) * 0.22;
+    els.cursorHalo.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+    if (Math.abs(tx - cx) > 0.5 || Math.abs(ty - cy) > 0.5) {
+      raf = requestAnimationFrame(tick);
+    }
   }
-  loop();
 }
 
-// ---------- input ----------
 function initKeys() {
   addEventListener("keydown", e => {
     if (e.repeat) return;
@@ -352,20 +314,14 @@ function initKeys() {
     } else if (e.key === " " || e.key === "Enter") {
       if (state.answered) { e.preventDefault(); showNext(); }
     } else if (e.key.toLowerCase() === "r") {
-      // dev/debug — quick re-roll without scoring (only if not answered)
       if (!state.answered) showNext();
     }
   });
 }
 
-function haptic(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch {} }
-
 function initClicks() {
   els.options.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const idx = Number(btn.dataset.idx);
-      answer(idx);
-    });
+    btn.addEventListener("click", () => answer(Number(btn.dataset.idx)));
   });
   els.modeBtns.forEach(btn => {
     btn.addEventListener("click", () => setCategory(btn.dataset.cat));
@@ -378,19 +334,12 @@ function initClicks() {
   });
 }
 
-// ---------- splash ----------
-function setSplashProgress(p) {
-  els.splashFill.style.width = Math.max(0, Math.min(1, p)) * 100 + "%";
-}
-function hideSplash() {
-  els.splash.classList.add("is-gone");
-}
+function setSplashProgress(p) { els.splashFill.style.width = Math.max(0, Math.min(1, p)) * 100 + "%"; }
+function hideSplash() { els.splash.classList.add("is-gone"); }
 
-// ---------- boot ----------
 async function boot() {
   setSplashProgress(0.1);
   initCursor();
-  initDust();
   try {
     const res = await fetch("./data/cities.json", { cache: "force-cache" });
     if (!res.ok) throw new Error("manifest fetch failed: " + res.status);
