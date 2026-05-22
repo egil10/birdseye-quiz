@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>birdseye · guess the city from above</title>
   <meta name="description" content="Endless birds-eye-view city quiz. Spot the skyline." />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#06070a" />
-  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23111'/><circle cx='32' cy='32' r='10' fill='%23fff'/></svg>" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#f6f4ef" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23151619'/><circle cx='32' cy='32' r='10' fill='%23ffe7c9'/></svg>" />
   <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin />
   <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
   <link rel="stylesheet" href="./styles.css" />
@@ -18,8 +18,10 @@
     <div class="blob blob-2"></div>
     <div class="blob blob-3"></div>
     <div class="blob blob-4"></div>
+    <div class="blob blob-5"></div>
     <div class="grain"></div>
   </div>
+  <div class="dust" id="dust" aria-hidden="true"></div>
   <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
   <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
 
@@ -45,9 +47,16 @@
         <span class="stat"><span class="stat-num" id="best">0</span><span class="stat-label">best</span></span>
         <span class="stat-sep"></span>
         <span class="stat"><span class="stat-num" id="total">0</span><span class="stat-label">played</span></span>
+        <span class="stat-sep"></span>
+        <span class="stat"><span class="stat-num" id="pool">0</span><span class="stat-label">pool</span></span>
       </div>
 
-      <button class="pill pill-reset" id="reset" title="reset stats" aria-label="reset stats">↺</button>
+      <div>
+        <a class="pill pill-icon" href="./explore.html" title="explore the database" aria-label="explore">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="6" height="6" rx="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.2"/></svg>
+        </a>
+        <button class="pill pill-icon pill-reset" id="reset" title="reset stats" aria-label="reset stats">↺</button>
+      </div>
     </header>
 
     <figure class="frame" id="frame">

@@ -48,14 +48,29 @@ tag in the bottom-right pill — handy for spotting bad sources to ban.
 ## Repo layout
 
 ```
-index.html            entry
-styles.css            glass / aurora UI
-app.js                quiz logic + cursor glow
+index.html            quiz entry
+explore.html          /explore — browse every city + image
+styles.css            light glass / antigravity UI (shared)
+app.js                quiz logic + cursor glow + dust
+explore.js            grid, filters, modal of all 4 images per city
 scripts/cities.mjs    curated city list
 scripts/build-cities.mjs  Wikimedia/Wikipedia fetch
 data/cities.json      generated manifest (committed so Vercel doesn't need Node)
 vercel.json           cache headers
 ```
+
+## Explore page
+
+`/explore.html` shows every city in the database as a grid card. Click a card
+to see all four images side-by-side with their source provenance tag, license,
+author, dimensions, and a link to the original Commons file page. Filters:
+
+- **search** by city or country name
+- **continent** (EU / AS / AM / AF / OC)
+- **tier** (1 = iconic … 4 = niche)
+- **source** — every distinct `source` tag from the manifest is a chip; click
+  it to see exactly which cities have images from that source. Use this to
+  decide which sources to ban before rebuilding.
 
 ## Curating sources
 

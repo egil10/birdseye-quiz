@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>birdseye · explore</title>
+  <meta name="description" content="Browse every city and image in the birdseye quiz." />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#f6f4ef" />
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23151619'/><circle cx='32' cy='32' r='10' fill='%23ffe7c9'/></svg>" />
+  <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+    <div class="blob blob-5"></div>
+    <div class="grain"></div>
+  </div>
+  <div class="dust" id="dust" aria-hidden="true"></div>
+  <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+  <div class="cursor-dot" id="cursorDot" aria-hidden="true"></div>
+
+  <main class="explore" id="explore">
+    <header class="explore-head">
+      <a class="pill pill-icon" href="./index.html" title="back to quiz" aria-label="back to quiz">←</a>
+
+      <label class="pill pill-search">
+        <input id="search" class="search-input" type="search" placeholder="search cities…" autocomplete="off" spellcheck="false" />
+        <button id="searchClear" class="search-clear" aria-label="clear">×</button>
+      </label>
+
+      <div class="filter-pills">
+        <div class="pill filter-group" id="contPill" role="tablist" aria-label="continent">
+          <button class="mode-btn is-active" data-cont="all">all</button>
+          <button class="mode-btn" data-cont="Europe">EU</button>
+          <button class="mode-btn" data-cont="Asia">AS</button>
+          <button class="mode-btn" data-cont="Americas">AM</button>
+          <button class="mode-btn" data-cont="Africa">AF</button>
+          <button class="mode-btn" data-cont="Oceania">OC</button>
+        </div>
+        <div class="pill filter-group" id="tierPill" role="tablist" aria-label="tier">
+          <button class="mode-btn is-active" data-tier="all">all tiers</button>
+          <button class="mode-btn" data-tier="1">t1</button>
+          <button class="mode-btn" data-tier="2">t2</button>
+          <button class="mode-btn" data-tier="3">t3</button>
+          <button class="mode-btn" data-tier="4">t4</button>
+        </div>
+        <div class="pill filter-group" id="sourcePill" role="tablist" aria-label="image source">
+          <button class="mode-btn is-active" data-src="all">all sources</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="explore-meta" id="exploreMeta">loading…</div>
+
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" hidden>no cities match these filters.</div>
+  </main>
+
+  <div class="modal-back" id="modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <header class="modal-head">
+        <div>
+          <div class="modal-title" id="modalTitle"></div>
+          <div class="modal-sub" id="modalSub"></div>
+        </div>
+        <button class="modal-close" id="modalClose" aria-label="close">×</button>
+      </header>
+      <div class="modal-grid" id="modalGrid"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./explore.js"></script>
+</body>
+</html>

@@ -23,7 +23,9 @@ const els = {
   elo: $("#elo"),
   best: $("#best"),
   total: $("#total"),
+  pool: $("#pool"),
   reset: $("#reset"),
+  dust: $("#dust"),
   source: $("#source"),
   srcTag: $("#srcTag"),
   hint: $("#hint"),
@@ -104,6 +106,7 @@ function rebuildPool() {
   else state.pool = all.filter(c => c.continent === state.category);
   // ensure pool has enough variety
   if (state.pool.length < 4) state.pool = all;
+  if (els.pool) els.pool.textContent = String(state.pool.length);
 }
 
 // ---------- question generation ----------
@@ -289,6 +292,24 @@ function resetStats() {
   renderStats();
 }
 
+// ---------- ambient dust ----------
+function initDust(count = 14) {
+  if (!els.dust) return;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement("span");
+    const x = Math.random() * 100;
+    const dur = 18 + Math.random() * 22;       // 18s..40s
+    const delay = -Math.random() * dur;         // start mid-cycle
+    const size = 2 + Math.random() * 4;
+    const drift = (Math.random() * 80 - 40) + "px";
+    s.style.cssText = `left:${x}vw;width:${size}px;height:${size}px;` +
+      `animation-duration:${dur}s;animation-delay:${delay}s;--drift:${drift};`;
+    frag.appendChild(s);
+  }
+  els.dust.appendChild(frag);
+}
+
 // ---------- cursor glow ----------
 function initCursor() {
   let tx = innerWidth / 2, ty = innerHeight / 2;
@@ -367,6 +388,7 @@ function hideSplash() {
 async function boot() {
   setSplashProgress(0.1);
   initCursor();
+  initDust();
   try {
     const res = await fetch("./data/cities.json", { cache: "force-cache" });
     if (!res.ok) throw new Error("manifest fetch failed: " + res.status);
