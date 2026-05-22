@@ -84,6 +84,9 @@ export const COUNTRY_ISO = {
   "Azerbaijan": "az",
   "Armenia": "am",
   "Georgia": "ge",
+  "Kyrgyzstan": "kg",
+  "Tajikistan": "tj",
+  "Turkmenistan": "tm",
 
   // Americas
   "United States": "us",
@@ -132,6 +135,16 @@ export const COUNTRY_ISO = {
   "Madagascar": "mg",
   "Namibia": "na",
   "Botswana": "bw",
+  "Burkina Faso": "bf",
+  "Cameroon": "cm",
+  "Republic of the Congo": "cg",
+  "Gabon": "ga",
+  "Mali": "ml",
+  "Niger": "ne",
+  "Togo": "tg",
+  "Benin": "bj",
+  "Guinea": "gn",
+  "Sierra Leone": "sl",
 
   // Oceania
   "Australia": "au",
@@ -140,6 +153,9 @@ export const COUNTRY_ISO = {
   "Papua New Guinea": "pg",
   "Solomon Islands": "sb",
   "Samoa": "ws",
+  "New Caledonia": "nc",
+  "American Samoa": "as",
+  "French Polynesia": "pf",
 };
 
 export function iso(country) {
