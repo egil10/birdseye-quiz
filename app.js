@@ -1,6 +1,8 @@
 // birdseye-quiz — main app logic
 // Static, no framework. Loads ./data/cities.json and runs an endless 4-option quiz.
 
+import { flagHtml } from "./country-flags.mjs";
+
 // ---------- constants ----------
 const STORAGE_KEY = "birdseye:v1";
 const RING_SIZE = 30;             // anti-repeat ring buffer
@@ -262,7 +264,7 @@ function answer(idx) {
   els.frame.classList.add(correct ? "is-correct" : "is-wrong");
   haptic(correct ? 8 : 24);
   els.revealName.textContent = state.current.name;
-  els.revealCountry.textContent = state.current.country;
+  els.revealCountry.innerHTML = flagHtml(state.current.country) + `<span>${state.current.country}</span>`;
   els.reveal.hidden = false;
 
   // source attribution

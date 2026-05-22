@@ -2,6 +2,8 @@
 // Browse every city + image. Filter by continent/tier/source. Click a card
 // to see all 4 images with their source provenance.
 
+import { flagHtml } from "./country-flags.mjs";
+
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 
@@ -95,7 +97,7 @@ function render(cities) {
       <span class="card-badge">${escapeHtml(c.continent)} · t${c.tier}</span>
       <span class="card-cap">
         <b>${escapeHtml(c.name)}</b>
-        <span class="card-meta">${escapeHtml(c.country)}</span>
+        <span class="card-meta">${flagHtml(c.country)} ${escapeHtml(c.country)}</span>
       </span>
     `;
     const imgEl = card.querySelector("img");
@@ -110,7 +112,7 @@ function render(cities) {
 
 // ---------- modal ----------
 function openModal(city) {
-  els.modalTitle.textContent = city.name;
+  els.modalTitle.innerHTML = `${escapeHtml(city.name)} <span style="font-weight:500;color:var(--muted);font-size:18px">${flagHtml(city.country, { cls: "flag flag-lg" })}</span>`;
   els.modalSub.textContent = `${city.country} · ${city.continent} · tier ${city.tier} · ${city.images.length} images`;
   els.modalGrid.innerHTML = "";
   const frag = document.createDocumentFragment();

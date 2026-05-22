@@ -329,8 +329,20 @@ body.has-cursor .cursor-glow { opacity: 1; }
   pointer-events: none;
 }
 .reveal:not([hidden]) { opacity: 1; transform: translateX(-50%) translateY(0); }
-.reveal-name { font-weight: 600; font-size: 18px; letter-spacing: -0.005em; color: var(--fg); }
-.reveal-country { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.reveal-name { font-weight: 600; font-size: 18px; letter-spacing: -0.005em; color: var(--fg); display: inline-flex; align-items: center; gap: 8px; }
+.reveal-country { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- flag ---------- */
+.flag {
+  display: inline-block;
+  vertical-align: middle;
+  width: 16px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.18);
+  flex-shrink: 0;
+}
+.flag-lg { width: 22px; height: 16px; border-radius: 3px; }
 
 /* ---------- options ---------- */
 .options {
