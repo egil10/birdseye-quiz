@@ -35,12 +35,9 @@ const state = {
 function escapeAttr(s) { return String(s).replace(/"/g, "&quot;"); }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
 
-// Wikimedia rejects arbitrary thumbnail widths for direct CDN access — only
-// the sizes their API has pre-generated for a given file are valid. The
-// manifest already stores a 1280px-wide thumb, which is small enough for the
-// grid (the browser downscales it to ~200-300px on display) and large enough
-// to look sharp in the lightbox. So no client-side resizing for now.
-function gridThumb(img) { return img.thumb; }
+// Two sizes baked into the manifest: `thumbSmall` (~500px wide) for the grid,
+// and `thumb` (~1280px wide) for the lightbox.
+function gridThumb(img) { return img.thumbSmall || img.thumb; }
 function bigThumb(img)  { return img.thumb; }
 
 function pickPrimaryImage(city) {
@@ -134,7 +131,7 @@ function renderModalThumbs() {
     const b = document.createElement("button");
     b.className = "modal-thumb";
     b.type = "button";
-    b.innerHTML = `<img loading="lazy" decoding="async" src="${escapeAttr(img.thumb)}" alt="thumb ${idx + 1}" />`;
+    b.innerHTML = `<img loading="lazy" decoding="async" src="${escapeAttr(gridThumb(img))}" alt="thumb ${idx + 1}" />`;
     b.addEventListener("click", () => swapModalImage(idx));
     frag.appendChild(b);
   });
