@@ -93,7 +93,7 @@ async function main() {
     }
   }
   manifest.generatedAt = new Date().toISOString();
-  await writeFile(PATH, JSON.stringify(manifest, null, 2));
+  await writeFile(PATH, JSON.stringify(manifest));   // minified for delivery
   console.log(`attached thumbSmall to ${attached} images, wrote ${PATH}`);
 }
 

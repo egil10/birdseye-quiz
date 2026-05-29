@@ -12,6 +12,9 @@
   <link rel="preconnect" href="https://flagcdn.com" crossorigin />
   <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
   <link rel="dns-prefetch" href="https://flagcdn.com" />
+  <link rel="preload" href="./data/cities.min.json" as="fetch" type="application/json" crossorigin="anonymous" />
+  <link rel="modulepreload" href="./app.js" />
+  <link rel="modulepreload" href="./country-flags.mjs" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="quiz">
@@ -34,7 +37,7 @@
         <span class="stat-sep"></span>
         <span class="stat"><span class="stat-num" id="accuracy">—</span><span class="stat-label">acc</span></span>
         <span class="stat-sep"></span>
-        <span class="stat"><span class="stat-num" id="elo">1000</span><span class="stat-label">elo</span></span>
+        <button class="stat stat-action" id="eloStat" type="button" title="elo over time"><span class="stat-num" id="elo">1000</span><span class="stat-label">elo</span></button>
         <span class="stat-sep"></span>
         <span class="stat"><span class="stat-num" id="best">0</span><span class="stat-label">best</span></span>
         <span class="stat-sep"></span>
@@ -82,6 +85,17 @@
       <div class="splash-title">birdseye</div>
       <div class="splash-sub">loading the world from above…</div>
       <div class="splash-bar"><div class="splash-bar-fill" id="splashFill"></div></div>
+    </div>
+  </div>
+
+  <div class="graph-back" id="eloModal" hidden>
+    <div class="graph-card" role="dialog" aria-modal="true" aria-label="elo over time">
+      <div class="graph-head">
+        <span class="graph-title">elo over time</span>
+        <button class="modal-close" id="eloClose" type="button" aria-label="close">×</button>
+      </div>
+      <div class="graph-plot" id="eloPlot"></div>
+      <div class="graph-foot" id="eloFoot"></div>
     </div>
   </div>
 

@@ -9,6 +9,7 @@ const RING_SIZE = 30;
 const REVEAL_MS = 1300;
 const K = 24;
 const CITY_RATING_BY_TIER = { 1: 880, 2: 1080, 3: 1380, 4: 1680 };
+const MAX_ELO_HISTORY = 800;
 
 // ---------- DOM ----------
 const $ = sel => document.querySelector(sel);
@@ -33,6 +34,11 @@ const els = {
   splash: $("#splash"),
   splashFill: $("#splashFill"),
   cursorHalo: $("#cursorHalo"),
+  eloStat: $("#eloStat"),
+  eloModal: $("#eloModal"),
+  eloClose: $("#eloClose"),
+  eloPlot: $("#eloPlot"),
+  eloFoot: $("#eloFoot"),
 };
 
 // ---------- state ----------
@@ -53,14 +59,14 @@ const state = {
 
 // ---------- persistence ----------
 function loadStats() {
+  let s = { elo: 1000, correct: 0, total: 0, streak: 0, best: 0, eloHistory: [] };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const s = JSON.parse(raw);
-      return { elo: 1000, correct: 0, total: 0, streak: 0, best: 0, ...s };
-    }
+    if (raw) s = { ...s, ...JSON.parse(raw) };
   } catch {}
-  return { elo: 1000, correct: 0, total: 0, streak: 0, best: 0 };
+  if (!Array.isArray(s.eloHistory)) s.eloHistory = [];
+  if (s.eloHistory.length === 0) s.eloHistory = [{ n: s.total, e: s.elo }];  // seed a starting point
+  return s;
 }
 function saveStats() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.stats)); } catch {}
@@ -82,8 +88,11 @@ function applyResult(city, correct) {
   } else {
     state.stats.streak = 0;
   }
+  state.stats.eloHistory.push({ n: state.stats.total, e: state.stats.elo });
+  if (state.stats.eloHistory.length > MAX_ELO_HISTORY) state.stats.eloHistory.shift();
   saveStats();
   renderStats();
+  if (els.eloModal && !els.eloModal.hidden) renderEloChart();   // live-update if open
 }
 
 // ---------- render ----------
@@ -269,10 +278,68 @@ function setCategory(cat) {
 }
 
 function resetStats() {
-  state.stats = { elo: 1000, correct: 0, total: 0, streak: 0, best: 0 };
+  state.stats = { elo: 1000, correct: 0, total: 0, streak: 0, best: 0, eloHistory: [{ n: 0, e: 1000 }] };
   saveStats();
   renderStats();
 }
+
+// ---------- elo-over-time graph ----------
+// "Nice" tick step: 1/2/5 × 10^k, floored at 10 so ticks land on round
+// multiples of 10 / 100 / 1000.
+function niceStep(span, maxTicks) {
+  const raw = Math.max(span, 1) / maxTicks;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  let step = 10 * pow;
+  for (const m of [1, 2, 5, 10]) { if (m * pow >= raw) { step = m * pow; break; } }
+  return Math.max(step, 10);
+}
+
+function renderEloChart() {
+  const hist = state.stats.eloHistory || [];
+  if (hist.length < 2) {
+    els.eloPlot.innerHTML = `<div class="graph-empty">play a few rounds — your elo curve shows up here.</div>`;
+    els.eloFoot.textContent = "";
+    return;
+  }
+  const W = 560, H = 320, PAD = { l: 52, r: 16, t: 16, b: 38 };
+  const xs = hist.map(p => p.n), ys = hist.map(p => p.e);
+  let xMin = Math.min(...xs), xMax = Math.max(...xs);
+  let yMin = Math.min(...ys), yMax = Math.max(...ys);
+  if (xMax === xMin) xMax = xMin + 1;
+  if (yMax === yMin) { yMin -= 50; yMax += 50; }
+  const xStep = niceStep(xMax - xMin, 6);
+  const yStep = niceStep(yMax - yMin, 4);
+  const x0 = Math.floor(xMin / xStep) * xStep, x1 = Math.ceil(xMax / xStep) * xStep;
+  const y0 = Math.floor(yMin / yStep) * yStep, y1 = Math.ceil(yMax / yStep) * yStep;
+  const sx = n => PAD.l + (n - x0) / (x1 - x0) * (W - PAD.l - PAD.r);
+  const sy = e => H - PAD.b - (e - y0) / (y1 - y0) * (H - PAD.t - PAD.b);
+
+  let g = "";
+  for (let x = x0; x <= x1 + 1e-6; x += xStep) {
+    const px = sx(x).toFixed(1);
+    g += `<line class="ax-grid" x1="${px}" y1="${PAD.t}" x2="${px}" y2="${H - PAD.b}"/>`;
+    g += `<text class="ax-lbl" x="${px}" y="${H - PAD.b + 18}" text-anchor="middle">${Math.round(x)}</text>`;
+  }
+  for (let y = y0; y <= y1 + 1e-6; y += yStep) {
+    const py = sy(y).toFixed(1);
+    g += `<line class="ax-grid" x1="${PAD.l}" y1="${py}" x2="${W - PAD.r}" y2="${py}"/>`;
+    g += `<text class="ax-lbl" x="${PAD.l - 8}" y="${(sy(y) + 3.5).toFixed(1)}" text-anchor="end">${Math.round(y)}</text>`;
+  }
+  g += `<line class="ax" x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${H - PAD.b}"/>`;
+  g += `<line class="ax" x1="${PAD.l}" y1="${H - PAD.b}" x2="${W - PAD.r}" y2="${H - PAD.b}"/>`;
+  const pts = hist.map(p => `${sx(p.n).toFixed(1)},${sy(p.e).toFixed(1)}`).join(" ");
+  g += `<polyline class="ax-line" points="${pts}"/>`;
+  const last = hist[hist.length - 1];
+  g += `<circle class="ax-dot" cx="${sx(last.n).toFixed(1)}" cy="${sy(last.e).toFixed(1)}" r="3.5"/>`;
+  g += `<text class="ax-title" x="${(PAD.l + (W - PAD.r)) / 2}" y="${H - 4}" text-anchor="middle">games played</text>`;
+
+  els.eloPlot.innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="elo over time">${g}</svg>`;
+  els.eloFoot.textContent = `now ${last.e} · peak ${Math.max(...ys)} · low ${Math.min(...ys)} · ${last.n} games`;
+}
+
+function openEloChart() { els.eloModal.hidden = false; renderEloChart(); }
+function closeEloChart() { els.eloModal.hidden = true; }
 
 // ---------- cursor halo (lightweight, no visible dot) ----------
 function initCursor() {
@@ -308,6 +375,10 @@ function initCursor() {
 function initKeys() {
   addEventListener("keydown", e => {
     if (e.repeat) return;
+    if (!els.eloModal.hidden) {        // graph open: Esc closes, swallow game keys
+      if (e.key === "Escape") closeEloChart();
+      return;
+    }
     if (["1","2","3","4"].includes(e.key)) {
       const idx = Number(e.key) - 1;
       if (idx < els.options.length) answer(idx);
@@ -327,11 +398,14 @@ function initClicks() {
     btn.addEventListener("click", () => setCategory(btn.dataset.cat));
   });
   els.reset.addEventListener("click", () => {
-    if (confirm("reset stats?")) resetStats();
+    if (confirm("reset stats?")) { resetStats(); if (!els.eloModal.hidden) renderEloChart(); }
   });
   els.frame.addEventListener("click", () => {
     if (state.answered) showNext();
   });
+  els.eloStat.addEventListener("click", openEloChart);
+  els.eloClose.addEventListener("click", closeEloChart);
+  els.eloModal.addEventListener("click", e => { if (e.target === els.eloModal) closeEloChart(); });
 }
 
 function setSplashProgress(p) { els.splashFill.style.width = Math.max(0, Math.min(1, p)) * 100 + "%"; }
@@ -341,7 +415,13 @@ async function boot() {
   setSplashProgress(0.1);
   initCursor();
   try {
-    const res = await fetch("./data/cities.json", { cache: "force-cache" });
+    // Lean manifest for the quiz; fall back to the full one if it's missing.
+    // Options match the <link rel="preload" as="fetch" crossorigin> in the
+    // HTML head so the browser reuses that early request instead of issuing a
+    // second one.
+    const opts = { cache: "force-cache", mode: "cors", credentials: "omit" };
+    let res = await fetch("./data/cities.min.json", opts);
+    if (!res.ok) res = await fetch("./data/cities.json", { cache: "force-cache" });
     if (!res.ok) throw new Error("manifest fetch failed: " + res.status);
     const manifest = await res.json();
     setSplashProgress(0.6);
@@ -354,6 +434,7 @@ async function boot() {
     await showNext();
     setSplashProgress(1);
     setTimeout(hideSplash, 250);
+    if (location.hash === "#elo") openEloChart();
   } catch (err) {
     console.error(err);
     els.splash.querySelector(".splash-sub").textContent =

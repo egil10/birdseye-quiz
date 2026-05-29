@@ -111,13 +111,10 @@ function render(cities) {
     card.className = "card";
     const img = pickPrimaryImage(c);
     card.innerHTML = `
-      <div class="card-name">
-        <b>${escapeHtml(c.name)}</b>
-        <span class="card-meta">${flagHtml(c.country)} ${escapeHtml(c.country)}</span>
-      </div>
-      <img loading="lazy" decoding="async" alt="${escapeAttr(c.name + ', ' + c.country)}" src="${escapeAttr(gridThumb(img))}" />
+      <div class="card-name">${escapeHtml(c.name)}</div>
+      <img class="card-img" loading="lazy" decoding="async" alt="${escapeAttr(c.name + ', ' + c.country)}" src="${escapeAttr(gridThumb(img))}" />
     `;
-    const imgEl = card.querySelector("img");
+    const imgEl = card.querySelector(".card-img");
     imgEl.addEventListener("load", () => imgEl.classList.add("is-loaded"), { once: true });
     imgEl.addEventListener("error", () => { card.style.opacity = "0.4"; }, { once: true });
     if (imgEl.complete && imgEl.naturalWidth) imgEl.classList.add("is-loaded");

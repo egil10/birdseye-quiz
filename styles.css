@@ -153,6 +153,18 @@ body.has-cursor .cursor-halo { opacity: 1; }
 }
 .stat-sep { width: 1px; height: 14px; background: var(--stroke); margin: 0 5px; }
 
+.stat-action {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.stat-action:hover .stat-num { text-decoration: underline; text-underline-offset: 2px; }
+
 .pill-icon {
   appearance: none;
   cursor: pointer;
@@ -335,6 +347,39 @@ body.has-cursor .cursor-halo { opacity: 1; }
 .src-link { color: var(--fg); }
 .pill-source:hover .src-link { text-decoration: underline; }
 
+/* ---------- elo graph modal ---------- */
+.graph-back {
+  position: fixed; inset: 0;
+  z-index: 200;
+  background: rgba(21, 22, 26, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 5vh 5vw;
+}
+.graph-back[hidden] { display: none; }
+.graph-card {
+  width: min(640px, 100%);
+  background: var(--bg);
+  border: 1px solid var(--stroke);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lift);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.graph-head { display: flex; justify-content: space-between; align-items: center; }
+.graph-title { font-weight: 600; font-size: 15px; letter-spacing: 0.01em; }
+.graph-plot svg { width: 100%; height: auto; display: block; }
+.graph-foot { font-size: 11px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.graph-empty { padding: 52px 12px; text-align: center; color: var(--muted); font-size: 13px; }
+.ax { stroke: var(--stroke-strong); stroke-width: 1; }
+.ax-grid { stroke: var(--stroke); stroke-width: 1; }
+.ax-lbl { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.ax-title { fill: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; }
+.ax-line { fill: none; stroke: var(--fg); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ax-dot { fill: var(--fg); }
+
 /* ---------- splash ---------- */
 .splash {
   position: fixed; inset: 0;
@@ -454,23 +499,13 @@ main.explore {
   contain: layout paint;
 }
 .card-name {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
   padding: 0 2px;
   font-size: 14px;
-  min-width: 0;
-}
-.card-name b { font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-name .card-meta {
-  color: var(--muted);
-  font-size: 11.5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+  font-weight: 600;
+  color: var(--fg);
   white-space: nowrap;
-  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .card img {
   width: 100%;
@@ -637,7 +672,6 @@ main.explore {
   .explore-head > :last-child { display: none; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
   .card-name { font-size: 12.5px; }
-  .card-name .card-meta { font-size: 10.5px; }
   .modal { padding: 12px; }
   .modal-thumbs { grid-template-columns: repeat(4, 1fr); }
 }
