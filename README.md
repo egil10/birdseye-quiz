@@ -28,9 +28,13 @@ bytes — and falls back to the full one if it's missing.
 ## Build the data
 
 ```bash
-npm run build         # build:cities → build:prune → build:thumbs → build:slim
+npm run build:all     # build:cities → build:prune → build:thumbs → build:slim
 npm run dev           # serves on http://localhost:5173
 ```
+
+> Note: the data pipeline is intentionally **not** named `build`, so Vercel's
+> zero-config never tries to run the (15-min, network-bound) Wikimedia fetch on
+> deploy. The site is pure static files; the manifests are committed.
 
 Individual steps:
 

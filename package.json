@@ -9,7 +9,7 @@
     "build:prune": "node scripts/prune-quality.mjs",
     "build:thumbs": "node scripts/add-small-thumbs.mjs",
     "build:slim": "node scripts/slim-manifest.mjs",
-    "build": "node scripts/build-cities.mjs && node scripts/prune-quality.mjs && node scripts/add-small-thumbs.mjs && node scripts/slim-manifest.mjs",
+    "build:all": "node scripts/build-cities.mjs && node scripts/prune-quality.mjs && node scripts/add-small-thumbs.mjs && node scripts/slim-manifest.mjs",
     "dev": "npx --yes http-server -p 5173 -c-1 ."
   },
   "engines": {
