@@ -14,6 +14,7 @@ const els = {
   contPill: $("#contPill"),
   tierPill: $("#tierPill"),
   sourceSelect: $("#sourceSelect"),
+  sortSelect: $("#sortSelect"),
   modal: $("#modal"),
   modalTitle: $("#modalTitle"),
   modalSub: $("#modalSub"),
@@ -26,7 +27,7 @@ const els = {
 
 const state = {
   manifest: null,
-  filter: { search: "", continent: "all", tier: "all", source: "all" },
+  filter: { search: "", continent: "all", tier: "all", source: "all", sort: "name" },
   modalCity: null,
   modalImgIdx: 0,
 };
@@ -77,7 +78,21 @@ function applyFilter() {
     }
     return true;
   });
-  render(filtered);
+  render(sortCities(filtered));
+}
+
+// ---------- sort ----------
+function sortCities(cities) {
+  const arr = cities.slice();
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  switch (state.filter.sort) {
+    case "name-desc": arr.sort((a, b) => byName(b, a)); break;
+    case "country":   arr.sort((a, b) => a.country.localeCompare(b.country) || byName(a, b)); break;
+    case "tier":      arr.sort((a, b) => a.tier - b.tier || byName(a, b)); break;
+    case "images":    arr.sort((a, b) => b.images.length - a.images.length || byName(a, b)); break;
+    default:          arr.sort(byName);
+  }
+  return arr;
 }
 
 // ---------- render ----------
@@ -96,11 +111,11 @@ function render(cities) {
     card.className = "card";
     const img = pickPrimaryImage(c);
     card.innerHTML = `
-      <img loading="lazy" decoding="async" alt="${escapeAttr(c.name + ', ' + c.country)}" src="${escapeAttr(gridThumb(img))}" />
-      <span class="card-cap">
+      <div class="card-name">
         <b>${escapeHtml(c.name)}</b>
         <span class="card-meta">${flagHtml(c.country)} ${escapeHtml(c.country)}</span>
-      </span>
+      </div>
+      <img loading="lazy" decoding="async" alt="${escapeAttr(c.name + ', ' + c.country)}" src="${escapeAttr(gridThumb(img))}" />
     `;
     const imgEl = card.querySelector("img");
     imgEl.addEventListener("load", () => imgEl.classList.add("is-loaded"), { once: true });
@@ -202,6 +217,10 @@ function initFilters() {
     if (!b) return;
     els.tierPill.querySelectorAll(".mode-btn").forEach(x => x.classList.toggle("is-active", x === b));
     state.filter.tier = b.dataset.tier;
+    applyFilter();
+  });
+  els.sortSelect.addEventListener("change", () => {
+    state.filter.sort = els.sortSelect.value;
     applyFilter();
   });
 

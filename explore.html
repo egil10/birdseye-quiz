@@ -34,11 +34,11 @@
     <div class="filter-row">
       <div class="pill filter-group" id="contPill" role="tablist" aria-label="continent">
         <button class="mode-btn is-active" data-cont="all">all</button>
-        <button class="mode-btn" data-cont="Europe">EU</button>
-        <button class="mode-btn" data-cont="Asia">AS</button>
-        <button class="mode-btn" data-cont="Americas">AM</button>
-        <button class="mode-btn" data-cont="Africa">AF</button>
-        <button class="mode-btn" data-cont="Oceania">OC</button>
+        <button class="mode-btn" data-cont="Europe">europe</button>
+        <button class="mode-btn" data-cont="Asia">asia</button>
+        <button class="mode-btn" data-cont="Americas">americas</button>
+        <button class="mode-btn" data-cont="Africa">africa</button>
+        <button class="mode-btn" data-cont="Oceania">oceania</button>
       </div>
       <div class="pill filter-group" id="tierPill" role="tablist" aria-label="tier">
         <button class="mode-btn is-active" data-tier="all">all</button>
@@ -47,6 +47,13 @@
         <button class="mode-btn" data-tier="3">t3</button>
         <button class="mode-btn" data-tier="4">t4</button>
       </div>
+      <select id="sortSelect" class="select-pill" aria-label="sort cities">
+        <option value="name">name a–z</option>
+        <option value="name-desc">name z–a</option>
+        <option value="country">country</option>
+        <option value="tier">tier · famous first</option>
+        <option value="images">most images</option>
+      </select>
     </div>
 
     <div class="explore-meta" id="exploreMeta">loading…</div>
